@@ -38,35 +38,50 @@ def GPT_response(text):
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
 def callback():
-    # get X-Line-Signature header value
+    # 獲取 X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
-    # get request body as text
+
+    # 獲取請求體
     body = request.get_data(as_text=True)
     app.logger.info("Request body: " + body)
-    # handle webhook body
+
+    # 處理 webhook body
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
+
     return 'OK'
 
-
-# 處理訊息
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    print(event.message.text)
-    print("Test")
-    # message = TextSendMessage(text=event.message.text)
-    # line_bot_api.reply_message(event.reply_token,message)
+    user_id = event.source.user_id
+    text = event.message.text
 
+    if text.startswith("記帳"):
+        # 假設格式為 "記帳 XXX 元"
+        try:
+            amount = int(text.split(" ")[1])
+            if user_id in accounts:
+                accounts[user_id].append(amount)
+            else:
+                accounts[user_id] = [amount]
+            reply_text = f"已記錄：{amount} 元"
+        except (IndexError, ValueError):
+            reply_text = "格式錯誤！請使用 '記帳 XXX 元'"
+    elif text == "查看帳本":
+        if user_id in accounts:
+            total = sum(accounts[user_id])
+            reply_text = f"目前總計：{total} 元"
+        else:
+            reply_text = "目前無任何記錄"
+    else:
+        reply_text = "請使用 '記帳 XXX 元' 來記錄消費，或使用 '查看帳本' 來查看總計"
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    logging.info("Test handle message")
-    print(event.message.text)
-    print("Test")
-    # message = TextSendMessage(text=event.message.text)
-    line_bot_api.reply_message(event.reply_token,TextSendMessage(text=event.message.text))
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply_text)
+    )
         
         
 import os
