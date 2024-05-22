@@ -52,7 +52,7 @@ def callback():
         abort(400)
 
     return 'OK'
-    
+ account = {}   
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_id = event.source.user_id
