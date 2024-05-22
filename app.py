@@ -52,7 +52,7 @@ def callback():
         abort(400)
 
     return 'OK'
- account = {}   
+accounts = {}
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_id = event.source.user_id
@@ -63,6 +63,7 @@ def handle_message(event):
         try:
             amount = int(text.split(" ")[1])
             if user_id in accounts:
+            # 重新啟動的 accounts 名字會改嗎？ 
                 accounts[user_id].append(amount)
             else:
                 accounts[user_id] = [amount]
