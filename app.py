@@ -52,12 +52,12 @@ def callback():
         abort(400)
 
     return 'OK'
-
+    
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_id = event.source.user_id
     text = event.message.text
-
+    print('hi')
     if text.startswith("記帳"):
         # 假設格式為 "記帳 XXX 元"
         try:
