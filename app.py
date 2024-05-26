@@ -68,8 +68,8 @@ def handle_message(event):
                 template=CarouselTemplate(
                     columns=[
                         CarouselColumn(
-                            thumbnail_image_url='https://i.imgur.com/wpM584d.jpg',
-                            title='選擇支出的類別',
+                            thumbnail_image_url='https://img.ltn.com.tw/Upload/health/page/800/2022/03/10/phpiUjDmR.jpg',
+                            title='飲食類',
                             text='請選擇以下支出類別',
                             actions=[
                                 MessageAction(
@@ -79,11 +79,50 @@ def handle_message(event):
                                 MessageAction(
                                     label='飲品',
                                     text='飲品'  # Keep in Chinese for category
-                                ),
+                                )
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/84/b2/4f/84b24faffd26e09b6492ff7ce73706a4.jpg',
+                            title='日常類',
+                            text='請選擇以下支出類別',
+                            actions=[
                                 MessageAction(
                                     label='交通',
                                     text='交通'  # Keep in Chinese for category
                                 ),
+                                MessageAction(
+                                    label='日常用品',
+                                    text='日常用品'  # Keep in Chinese for category
+                                ),
+                                MessageAction(
+                                    label='居家',
+                                    text='居家'  # Keep in Chinese for category
+                                )
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/50/f6/f7/50f6f731a2ca23aa58cfe4f776ca80a8.jpg',
+                            title='娛樂類',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(
+                                    label='衣服配件',
+                                    text='衣服配件'  # Keep in Chinese for category
+                                ),
+                                MessageAction(
+                                    label='交際娛樂',
+                                    text='交際娛樂'  # Keep in Chinese for category
+                                )
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/42/c5/b6/42c5b646d387eedfaf212624f3699a92.jpg',
+                            title='其他',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(
+                                    label='醫療',
+                                    text='醫療'  # Keep in Chinese for category
+                                ),
+                                MessageAction(
+                                    label='其他',
+                                    text='其他'  # Keep in Chinese for category
+                                )
                             ]
                         )
                     ]
