@@ -63,7 +63,7 @@ def handle_message(event):
 
     if text.startswith("記帳"):
         reply_text = "請輸入「支出」或「收入」"
-        if text.startswith("收入"):
+        if text == "收入":
             # 假設格式為 "收入 XXX"
             reply_text = "請輸入'收入 XXX'"
             try:
@@ -76,7 +76,7 @@ def handle_message(event):
             except (IndexError, ValueError):
                 reply_text = "格式錯誤！請輸入'收入 XXX'"
 
-        elif text.startswith("支出"):
+        elif text == "支出":
             reply_text = "請輸入'支出 XXX'"
             # 假設格式為"支出 XXX"
             try:
@@ -88,6 +88,8 @@ def handle_message(event):
                 reply_text = f"已紀錄：{amount} 元"
             except (IndexError, ValueError):
                 reply_text = "格式錯誤！請輸入'支出 XXX'"
+        else:
+            reply_text = "格式錯誤！請輸入「支出」或「收入」"
 
     elif text == "查看帳本":
         if user_id in (pos_acc or neg_acc):
