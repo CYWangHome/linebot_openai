@@ -62,7 +62,6 @@ def handle_message(event):
 
     if text == "支出":
         try:
-            # Display expense category menu
             carousel_template_message = TemplateSendMessage(
                 alt_text='選擇支出的類別',
                 template=CarouselTemplate(
@@ -72,14 +71,8 @@ def handle_message(event):
                             title='飲食類',
                             text='請選擇以下支出類別',
                             actions=[
-                                MessageAction(
-                                    label='食物',
-                                    text='食物'
-                                ),
-                                MessageAction(
-                                    label='飲品',
-                                    text='飲品'
-                                )
+                                MessageAction(label='食物', text='食物'),
+                                MessageAction(label='飲品', text='飲品')
                             ]
                         ),
                         CarouselColumn(
@@ -87,18 +80,9 @@ def handle_message(event):
                             title='日常類',
                             text='請選擇以下支出類別',
                             actions=[
-                                MessageAction(
-                                    label='交通',
-                                    text='交通'
-                                ),
-                                MessageAction(
-                                    label='日常用品',
-                                    text='日常用品'
-                                ),
-                                MessageAction(
-                                    label='居家',
-                                    text='居家'
-                                )
+                                MessageAction(label='交通', text='交通'),
+                                MessageAction(label='日常用品', text='日常用品'),
+                                MessageAction(label='居家', text='居家')
                             ]
                         ),
                         CarouselColumn(
@@ -106,14 +90,8 @@ def handle_message(event):
                             title='娛樂類',
                             text='請選擇以下支出類別',
                             actions=[
-                                MessageAction(
-                                    label='衣服配件',
-                                    text='衣服配件'
-                                ),
-                                MessageAction(
-                                    label='交際娛樂',
-                                    text='交際娛樂'
-                                )
+                                MessageAction(label='衣服配件', text='衣服配件'),
+                                MessageAction(label='交際娛樂', text='交際娛樂')
                             ]
                         ),
                         CarouselColumn(
@@ -121,46 +99,34 @@ def handle_message(event):
                             title='其他',
                             text='請選擇以下支出類別',
                             actions=[
-                                MessageAction(
-                                    label='醫療',
-                                    text='醫療'
-                                ),
-                                MessageAction(
-                                    label='其他',
-                                    text='其他'
-                                )
+                                MessageAction(label='醫療', text='醫療'),
+                                MessageAction(label='其他', text='其他')
                             ]
                         )
                     ]
                 )
             )
-            line_bot_api.reply_message(
-                event.reply_token, carousel_template_message)
+            line_bot_api.reply_message(event.reply_token, carousel_template_message)
         except Exception as e:
-            # Handle potential errors during message processing
             line_bot_api.reply_message(event.reply_token, TextSendMessage(
-                text="An error occurred. Please try again."))
-    elif text == "記帳":
-        # Handle "記帳" message
-        reply_text = "請輸入「支出」或「收入」"
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=reply_text))
-    elif text == "查看帳本":
-        # Handle "查看帳本" message
-        reply_text = check_account(user_id)
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=reply_text))
-    elif text.startswith("收入") or text.startswith("支出"):
-        # Handle income or expense input
-        reply_text = handle_account_input(user_id, text)
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=reply_text))
-    else:
-        # Handle other messages
-        reply_text = "請使用「記帳」或「查看帳本」"
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=reply_text))
+                text=f"An error occurred: {str(e)}. Please try again."))
+            app.logger.error(f"Error: {traceback.format_exc()}")
 
+    elif text == "記帳":
+        reply_text = "請輸入「支出」或「收入」"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
+    elif text == "查看帳本":
+        reply_text = check_account(user_id)
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
+    elif text.startswith("收入") or text.startswith("支出"):
+        reply_text = handle_account_input(user_id, text)
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
+    else:
+        reply_text = "請使用「記帳」或「查看帳本」"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
 
 def check_account(user_id):
     if user_id in pos_acc or user_id in neg_acc:
