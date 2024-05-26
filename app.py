@@ -54,64 +54,78 @@ def callback():
     return 'OK'
 pos_acc = {}
 neg_acc = {}
-@handler.add(MessageEvent, message=TextMessage)
+user_states = {}
 
 def handle_message(event):
     user_id = event.source.user_id
-    text = event.message.text
-    # print('hi')
+    text = event.message.text.strip()  # 去除前后的空格
 
-    if text.startswith("記帳"):
-        reply_text = "請輸入「支出」或「收入」"
+    # 获取用户当前状态
+    user_state = user_states.get(user_id, "INIT")
+
+    if user_state == "INIT":
+        if text == "記帳":
+            reply_text = "請輸入「支出」或「收入」"
+            user_states[user_id] = "WAITING_FOR_TYPE"
+        elif text == "查看帳本":
+            reply_text = get_account_summary(user_id)
+        else:
+            reply_text = "請使用「記帳」或「查看帳本」"
+    elif user_state == "WAITING_FOR_TYPE":
         if text == "收入":
-            # 假設格式為 "收入 XXX"
             reply_text = "請輸入'收入 XXX'"
+            user_states[user_id] = "WAITING_FOR_AMOUNT_INCOME"
+        elif text == "支出":
+            reply_text = "請輸入'支出 XXX'"
+            user_states[user_id] = "WAITING_FOR_AMOUNT_EXPENSE"
+        else:
+            reply_text = "格式錯誤！請輸入「支出」或「收入」"
+    elif user_state == "WAITING_FOR_AMOUNT_INCOME":
+        if text.startswith("收入 "):
             try:
                 amount = int(text.split(" ")[1])
                 if user_id in pos_acc:
                     pos_acc[user_id].append(amount)
                 else:
                     pos_acc[user_id] = [amount]
-                reply_text = f"已紀錄：{amount} 元"
+                reply_text = f"已紀錄收入：{amount} 元"
+                user_states[user_id] = "INIT"
             except (IndexError, ValueError):
                 reply_text = "格式錯誤！請輸入'收入 XXX'"
-
-        elif text == "支出":
-            reply_text = "請輸入'支出 XXX'"
-            # 假設格式為"支出 XXX"
+        else:
+            reply_text = "格式錯誤！請輸入'收入 XXX'"
+    elif user_state == "WAITING_FOR_AMOUNT_EXPENSE":
+        if text.startswith("支出 "):
             try:
                 amount = int(text.split(" ")[1])
                 if user_id in neg_acc:
                     neg_acc[user_id].append(amount)
                 else:
                     neg_acc[user_id] = [amount]
-                reply_text = f"已紀錄：{amount} 元"
+                reply_text = f"已紀錄支出：{amount} 元"
+                user_states[user_id] = "INIT"
             except (IndexError, ValueError):
                 reply_text = "格式錯誤！請輸入'支出 XXX'"
         else:
-            reply_text = "格式錯誤！請輸入「支出」或「收入」"
-
-    elif text == "查看帳本":
-        if user_id in (pos_acc or neg_acc):
-            pos_total = sum(pos_acc[user_id])
-            neg_total = sum(neg_acc[user_id])
-            total = pos_total - neg_total
-            if total > 0:
-                reply_text = f"目前淨收入：{total} 元"
-            elif total == 0:
-                reply_text = f"目前收支平衡"
-            else:
-                bad_total = -total
-                reply_text = f"目前透支：{bad_total} 元"
-        else:
-            reply_text = "目前無任何記錄"
+            reply_text = "格式錯誤！請輸入'支出 XXX'"
     else:
-        reply_text = "請使用輸入「記帳」 或「查看帳本」"
+        reply_text = "請使用「記帳」或「查看帳本」"
 
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply_text)
-    )
+    return reply_text
+
+def get_account_summary(user_id):
+    if user_id in pos_acc or user_id in neg_acc:
+        pos_total = sum(pos_acc.get(user_id, []))
+        neg_total = sum(neg_acc.get(user_id, []))
+        total = pos_total - neg_total
+        if total > 0:
+            return f"目前淨收入：{total} 元"
+        elif total == 0:
+            return "目前收支平衡"
+        else:
+            return f"目前透支：{-total} 元"
+    else:
+        return "目前無任何記錄"
         
         
 import os
