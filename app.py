@@ -52,6 +52,44 @@ def callback():
         abort(400)
 
     return 'OK'
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    user_message = event.message.text
+
+    if re.match('支出', user_message):  # Use user_message for clarity
+        try:
+            carousel_template_message = TemplateSendMessage(
+                alt_text='Expense Category Selection',  # English translation
+                template=CarouselTemplate(
+                    columns=[
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.imgur.com/wpM584d.jpg',
+                            title='Choose Expense Category',  # English translation
+                            text='Available Categories',  # English translation
+                            actions=[
+                                MessageAction(
+                                    label='Food',
+                                    text='食物'  # Keep in Chinese for category
+                                ),
+                                MessageAction(
+                                    label='Drinks',
+                                    text='飲品'  # Keep in Chinese for category
+                                )
+                            ]
+                        )
+                    ]
+                )
+            )
+            line_bot_api.reply_message(
+                event.reply_token, carousel_template_message)
+        except Exception as e:
+            # Handle potential errors during message processing (optional)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text="An error occurred. Please try again."))
+    else:
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=user_message))
 pos_acc = {}
 neg_acc = {}
 @handler.add(MessageEvent, message=TextMessage)
