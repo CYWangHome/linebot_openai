@@ -53,29 +53,37 @@ def callback():
 
     return 'OK'
 
+pos_acc = {}
+neg_acc = {}
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_message = event.message.text
+    user_id = event.source.user_id
+    text = event.message.text.strip()
 
-    if re.match('支出', user_message):  # Use user_message for clarity
+    if text == "支出":
         try:
+            # Display expense category menu
             carousel_template_message = TemplateSendMessage(
-                alt_text='Expense Category Selection',  # English translation
+                alt_text='選擇支出的類別',  # English translation (optional)
                 template=CarouselTemplate(
                     columns=[
                         CarouselColumn(
                             thumbnail_image_url='https://i.imgur.com/wpM584d.jpg',
-                            title='Choose Expense Category',  # English translation
-                            text='Available Categories',  # English translation
+                            title='選擇支出的類別',
+                            text='請選擇以下支出類別',
                             actions=[
                                 MessageAction(
-                                    label='Food',
+                                    label='食物',
                                     text='食物'  # Keep in Chinese for category
                                 ),
                                 MessageAction(
-                                    label='Drinks',
+                                    label='飲品',
                                     text='飲品'  # Keep in Chinese for category
-                                )
+                                ),
+                                MessageAction(
+                                    label='交通',
+                                    text='交通'  # Keep in Chinese for category
+                                ),
                             ]
                         )
                     ]
@@ -87,30 +95,26 @@ def handle_message(event):
             # Handle potential errors during message processing (optional)
             line_bot_api.reply_message(event.reply_token, TextSendMessage(
                 text="An error occurred. Please try again."))
-    else:
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text=user_message))
-pos_acc = {}
-neg_acc = {}
-@handler.add(MessageEvent, message=TextMessage)
-
-def handle_message(event):
-    user_id = event.source.user_id
-    text = event.message.text.strip()
-
-    if text == "記帳":
+    elif text == "記帳":
+        # Handle "記帳" message (optional)
         reply_text = "請輸入「支出」或「收入」"
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=reply_text))
     elif text == "查看帳本":
+        # Handle "查看帳本" message (optional)
         reply_text = check_account(user_id)
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=reply_text))
     elif text.startswith("收入") or text.startswith("支出"):
+        # Handle income or expense input (optional)
         reply_text = handle_account_input(user_id, text)
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=reply_text))
     else:
+        # Handle other messages (optional)
         reply_text = "請使用「記帳」或「查看帳本」"
-
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply_text)
-    )
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text=reply_text))
 
 def check_account(user_id):
     if user_id in pos_acc or user_id in neg_acc:
