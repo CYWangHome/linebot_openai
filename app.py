@@ -111,19 +111,15 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(
                 text=f"An error occurred: {str(e)}. Please try again."))
             app.logger.error(f"Error: {traceback.format_exc()}")
-
     elif text == "記帳":
         reply_text = "請輸入「支出」或「收入」"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-    
     elif text == "查看帳本":
         reply_text = check_account(user_id)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-    
     elif text.startswith("收入") or text.startswith("支出"):
         reply_text = handle_account_input(user_id, text)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-    
     else:
         reply_text = "請使用「記帳」或「查看帳本」"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
