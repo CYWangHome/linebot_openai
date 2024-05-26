@@ -60,7 +60,7 @@ def handle_message(event):
     user_id = event.source.user_id
     text = event.message.text.strip()
 
-    if re.match('支出',message):
+    if text == "支出":
         try:
             carousel_template_message = TemplateSendMessage(
                 alt_text='選擇支出的類別',
