@@ -52,32 +52,59 @@ def callback():
         abort(400)
 
     return 'OK'
-accounts = {}
+pos_acc = {}
+neg_acc = {}
 @handler.add(MessageEvent, message=TextMessage)
+
 def handle_message(event):
     user_id = event.source.user_id
     text = event.message.text
-    print('hi')
+    # print('hi')
+
     if text.startswith("記帳"):
-        # 假設格式為 "記帳 XXX 元"
-        try:
-            amount = int(text.split(" ")[1])
-            if user_id in accounts:
-            # 重新啟動的 accounts 名字會改嗎？ 
-                accounts[user_id].append(amount)
-            else:
-                accounts[user_id] = [amount]
-            reply_text = f"已記錄：{amount} 元"
-        except (IndexError, ValueError):
-            reply_text = "格式錯誤！請使用 '記帳 XXX 元'"
+        reply_text = "請輸入「支出」或「收入」"
+        if text.startswith("收入"):
+            # 假設格式為 "收入 XXX"
+            reply_text = "請輸入'收入 XXX'"
+            try:
+                amount = int(text.split(" ")[1])
+                if user_id in pos_acc:
+                    pos_acc[user_id].append(amount)
+                else:
+                    pos_acc[user_id] = [amount]
+                reply_text = f"已紀錄：{amount} 元"
+            except (IndexError, ValueError):
+                reply_text = "格式錯誤！請輸入'收入 XXX'"
+
+        elif text.startswith("支出"):
+            reply_text = "請輸入'支出 XXX'"
+            # 假設格式為"支出 XXX"
+            try:
+                amount = int(text.split(" ")[1])
+                if user_id in neg_acc:
+                    neg_acc[user_id].append(amount)
+                else:
+                    neg_acc[user_id] = [amount]
+                reply_text = f"已紀錄：{amount} 元"
+            except (IndexError, ValueError):
+                reply_text = "格式錯誤！請輸入'支出 XXX'"
+
     elif text == "查看帳本":
-        if user_id in accounts:
-            total = sum(accounts[user_id])
-            reply_text = f"目前總計：{total} 元"
+        if user_id in (pos_acc or neg_acc):
+            pos_total = sum(pos_acc[user_id])
+            neg_total = sum(neg_acc[user_id])
+            total = pos_total - neg_total
+            if total > 0:
+                reply_text = f"目前淨收入：{total} 元"
+            elif total == 0:
+                reply_text = f"目前收支平衡"
+            else:
+                bad_total = -total
+                reply_text = f"目前透支：{bad_total} 元"
         else:
             reply_text = "目前無任何記錄"
     else:
-        reply_text = "請使用 '記帳 XXX 元' 來記錄消費，或使用 '查看帳本' 來查看總計"
+        reply_text = "請使用輸入「記帳」 或「查看帳本」"
 
     line_bot_api.reply_message(
         event.reply_token,
