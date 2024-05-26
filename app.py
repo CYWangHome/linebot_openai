@@ -56,10 +56,6 @@ def callback():
 pos_acc = {}
 neg_acc = {}
 @handler.add(MessageEvent, message=TextMessage)
-from linebot.models import (
-    TemplateSendMessage, CarouselTemplate, CarouselColumn, MessageAction, TextSendMessage
-)
-
 def handle_message(event):
     user_id = event.source.user_id
     text = event.message.text.strip()
