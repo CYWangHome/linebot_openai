@@ -102,16 +102,23 @@ def handle_message(event):
     elif message == "查詢本日累積":
         date = datetime.now().strftime("%Y-%m-%d")
         total_expense = query_today_total(date)
-        response_message = TextSendMessage(text=f"今日支出總和為 {total_expense} 元")
+        if total_expense == 0:
+            response_message = TextSendMessage(text="目前並無紀錄！")
+        else:
+            response_message = TextSendMessage(text=f"今日支出總和為 {total_expense} 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
         total_income, total_expense, balance = query_monthly_balance(month)
-        response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
+        if total_income == 0 and total_expense == 0:
+            response_message = TextSendMessage(text="目前並無紀錄！")
+        else:
+            response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
+
 
 if __name__ == '__main__':
     app.run(port=5000)
