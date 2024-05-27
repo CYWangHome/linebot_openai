@@ -15,26 +15,9 @@ handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')
 
 import sqlite3
 
-def create_accounting_db():
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-
-    c.execute('''
-        CREATE TABLE transactions (
-            date TEXT,
-            type TEXT,
-            amount REAL
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-
-
-
+conn = sqlite3.connect('accounting.db')
 
 def insert_transaction(trans_type, category, amount, date):
-    conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
     c.execute('INSERT INTO transactions (type, category, amount, date) VALUES (?, ?, ?, ?)', (trans_type, category, amount, date))
     conn.commit()
