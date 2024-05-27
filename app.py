@@ -152,7 +152,7 @@ def handle_account_input(user_id, text):
                 neg_acc[user_id].append(amount)
             else:
                 neg_acc[user_id] = [amount]
-            return f"已紀錄：{amount} 元"
+            return f"已紀錄：-{amount} 元"
         except (IndexError, ValueError):
             return "格式錯誤！請輸入'支出 XXX'"
     else:
