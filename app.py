@@ -11,6 +11,7 @@ app = Flask(__name__)
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')  # 你需要將這個值替換為你的 Channel Secret
 
+@app.route('/callback', methods=['POST'])
 def create_table():
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -62,7 +63,7 @@ def generate_template_message(alt_text, title, text, actions):
         )
     )
 
-@app.route('/callback', methods=['POST'])
+
 def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
