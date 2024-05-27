@@ -1,3 +1,4 @@
+ngrok http 5000
 from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
