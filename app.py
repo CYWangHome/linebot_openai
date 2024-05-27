@@ -96,25 +96,28 @@ def handle_message(event):
     elif "元" in message and any(category in message for category in ["飲食類", "日常類", "娛樂類", "其他"]):
         parts = message.split()
         category = parts[0]
-        amount = int(parts[1].replace("元", ""))
-        date = datetime.now().strftime("%Y-%m-%d")
-        insert_transaction("支出", category, amount, date)
-        response_message = TextSendMessage(text=f"已記錄 {category} 支出 {amount} 元")
+        try:
+            amount = int(parts[1].replace("元", ""))
+            date = datetime.now().strftime("%Y-%m-%d")
+            insert_transaction("支出", category, amount, date)
+            response_message = TextSendMessage(text=f"已記錄 {category} 支出 {amount} 元")
+        except ValueError:
+            response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 飲食類 100 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif "收入" in message:
         parts = message.split()
-        amount = int(parts[1].replace("元", ""))
-        date = datetime.now().strftime("%Y-%m-%d")
-        insert_transaction("收入", "收入", amount, date)
-        response_message = TextSendMessage(text=f"已記錄收入 {amount} 元")
+        try:
+            amount = int(parts[1].replace("元", ""))
+            date = datetime.now().strftime("%Y-%m-%d")
+            insert_transaction("收入", "收入", amount, date)
+            response_message = TextSendMessage(text=f"已記錄收入 {amount} 元")
+        except ValueError:
+            response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 收入 1000 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "查詢本日累積":
         date = datetime.now().strftime("%Y-%m-%d")
         total_expense = query_today_total(date)
-        if total_expense == 0:
-            response_message = TextSendMessage(text="目前並無紀錄！")
-        else:
-            response_message = TextSendMessage(text=f"今日支出總和為 {total_expense} 元")
+        response_message = TextSendMessage(text=f"今日支出總和為 {total_expense} 元" if total_expense > 0 else "目前並無紀錄！")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
