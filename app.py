@@ -1,152 +1,185 @@
-from flask import Flask, request, abort, jsonify
+from flask import Flask, request, abort
 
 from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError, LineBotApiError
+    InvalidSignatureError
 )
 from linebot.models import *
 
+import csv  # 导入CSV模块
 #======python的函數庫==========
 import tempfile, os
 import datetime
 import time
 import traceback
-import sqlite3
 #======python的函數庫==========
 
 
 app = Flask(__name__)
+static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
+# Channel Access Token
+line_bot_api = LineBotApi(os.getenv('CHANNEL_ACCESS_TOKEN'))
+# Channel Secret
+handler = WebhookHandler(os.getenv('CHANNEL_SECRET'))
 
-# 初始化数据库
-def init_db():
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY,
-            type TEXT NOT NULL,
-            category TEXT NOT NULL,
-            amount INTEGER NOT NULL,
-            date TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
 
-init_db()
+# 監聽所有來自 /callback 的 Post Request
+@app.route("/callback", methods=['POST'])
+def callback():
+    # 獲取 X-Line-Signature header value
+    signature = request.headers['X-Line-Signature']
 
-# 插入交易记录
-def insert_transaction(trans_type, category, amount, date):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('INSERT INTO transactions (type, category, amount, date) VALUES (?, ?, ?, ?)', 
-              (trans_type, category, amount, date))
-    conn.commit()
-    conn.close()
+    # 獲取請求體
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
 
-# 查询当天总支出
-def query_today_total(date):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date = ? AND type = "支出"', (date,))
-    total_expense = c.fetchone()[0] or 0
-    conn.close()
-    return total_expense
+    # 處理 webhook body
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
 
-# 查询本月结余
-def query_monthly_balance(month):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date LIKE ? AND type = "支出"', (f'{month}%',))
-    total_expense = c.fetchone()[0] or 0
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date LIKE ? AND type = "收入"', (f'{month}%',))
-    total_income = c.fetchone()[0] or 0
-    conn.close()
-    balance = total_income - total_expense
-    return total_income, total_expense, balance
+    return 'OK'
 
-# 生成多样版组合按钮消息
-def generate_template_message(alt_text, title, text, actions):
-    return {
-        "type": "template",
-        "altText": alt_text,
-        "template": {
-            "type": "buttons",
-            "title": title,
-            "text": text,
-            "actions": actions
-        }
-    }
+pos_acc = {}
+neg_acc = {}
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    user_id = event.source.user_id
+    text = event.message.text.strip()
 
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    data = request.get_json()
-    message = data['events'][0]['message']['text']
-    reply_token = data['events'][0]['replyToken']
-    response_message = ""
+    if text == "支出":
+        try:
+            carousel_template_message = TemplateSendMessage(
+                alt_text='選擇支出的類別',
+                template=CarouselTemplate(
+                    columns=[
+                        CarouselColumn(
+                            thumbnail_image_url='https://img.ltn.com.tw/Upload/health/page/800/2022/03/10/phpiUjDmR.jpg',
+                            title='飲食類',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(label='食物', text='食物'),
+                                MessageAction(label='飲品', text='飲品')
+                            ]
+                        ),
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/84/b2/4f/84b24faffd26e09b6492ff7ce73706a4.jpg',
+                            title='日常類',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(label='交通', text='交通'),
+                                MessageAction(label='日常用品', text='日常用品'),
+                                MessageAction(label='居家', text='居家')
+                            ]
+                        ),
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/50/f6/f7/50f6f731a2ca23aa58cfe4f776ca80a8.jpg',
+                            title='娛樂類',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(label='衣服配件', text='衣服配件'),
+                                MessageAction(label='交際娛樂', text='交際娛樂')
+                            ]
+                        ),
+                        CarouselColumn(
+                            thumbnail_image_url='https://i.pinimg.com/564x/42/c5/b6/42c5b646d387eedfaf212624f3699a92.jpg',
+                            title='其他',
+                            text='請選擇以下支出類別',
+                            actions=[
+                                MessageAction(label='醫療', text='醫療'),
+                                MessageAction(label='其他', text='其他')
+                            ]
+                        )
+                    ]
+                )
+            )
+            line_bot_api.reply_message(event.reply_token, carousel_template_message)
+        except Exception as e:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(
+                text=f"An error occurred: {str(e)}. Please try again."))
+            app.logger.error(f"Error: {traceback.format_exc()}")
 
-    if message == "記帳":
-        actions = [
-            {"type": "message", "label": "支出", "text": "支出"},
-            {"type": "message", "label": "收入", "text": "收入"}
-        ]
-        response_message = generate_template_message("記帳", "記帳選單", "請選擇支出或收入", actions)
-    elif message == "支出":
-        actions = [
-            {"type": "message", "label": "飲食類", "text": "飲食類"},
-            {"type": "message", "label": "日常類", "text": "日常類"},
-            {"type": "message", "label": "娛樂類", "text": "娛樂類"},
-            {"type": "message", "label": "其他", "text": "其他"}
-        ]
-        response_message = generate_template_message("支出", "支出選單", "請選擇支出類別", actions)
-    elif message == "查看帳本":
-        actions = [
-            {"type": "message", "label": "查詢本日累積", "text": "查詢本日累積"},
-            {"type": "message", "label": "統計本月結餘", "text": "統計本月結餘"}
-        ]
-        response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
-    elif message in ["飲食類", "日常類", "娛樂類", "其他"]:
-        response_message = {
-            "type": "text",
-            "text": f"請輸入 {message} 支出金額，例如: {message} 100 元"
-        }
-    elif "元" in message:
-        parts = message.split()
-        category = parts[0]
-        amount = int(parts[1].replace("元", ""))
-        date = datetime.now().strftime("%Y-%m-%d")
-        insert_transaction("支出", category, amount, date)
-        response_message = {
-            "type": "text",
-            "text": f"已記錄 {category} 支出 {amount} 元"
-        }
-    elif message == "查詢本日累積":
-        date = datetime.now().strftime("%Y-%m-%d")
-        total_expense = query_today_total(date)
-        response_message = {
-            "type": "text",
-            "text": f"今日支出總和為 {total_expense} 元"
-        }
-    elif message == "統計本月結餘":
-        month = datetime.now().strftime("%Y-%m")
-        total_income, total_expense, balance = query_monthly_balance(month)
-        response_message = {
-            "type": "text",
-            "text": f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元"
-        }
+    elif text == "記帳":
+        reply_text = "請輸入「支出」或「收入」"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
+    elif text == "查看帳本":
+        reply_text = check_account(user_id)
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
+    elif text.startswith("收入") or text.startswith("支出"):
+        reply_text = handle_account_input(user_id, text)
+        # 保存数据到CSV文件
+        amount = text.split()[1]  # 解析类别和金额
+        save_to_csv(user_id, amount)
+        
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+    
     else:
-        response_message = {
-            "type": "text",
-            "text": "無效的指令"
-        }
+        reply_text = "請使用「記帳」或「查看帳本」"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
 
-    return jsonify({
-        'replyToken': reply_token,
-        'messages': [response_message]
-    })
 
-if __name__ == '__main__':
-    app.run(port=5000)
+def check_account(user_id):
+    if user_id in pos_acc or user_id in neg_acc:
+        pos_total = sum(pos_acc.get(user_id, []))
+        neg_total = sum(neg_acc.get(user_id, []))
+        total = pos_total - neg_total
+        if total > 0:
+            return f"目前淨收入：{total} 元"
+        elif total == 0:
+            return f"目前收支平衡"
+        else:
+            bad_total = -total
+            return f"目前透支：{bad_total} 元"
+    else:
+        return "目前無任何記錄"
 
+def handle_account_input(user_id, text):
+    if text.startswith("收入"):
+        try:
+            amount = int(text.split(" ")[1])
+            if user_id in pos_acc:
+                pos_acc[user_id].append(amount)
+            else:
+                pos_acc[user_id] = [amount]
+            return f"已紀錄：{amount} 元"
+        except (IndexError, ValueError):
+            return "格式錯誤！請輸入'收入 XXX'"
+    elif text.startswith("支出"):
+        try:
+            amount = int(text.split(" ")[1])
+            if user_id in neg_acc:
+                neg_acc[user_id].append(amount)
+            else:
+                neg_acc[user_id] = [amount]
+            return f"已紀錄：{amount} 元"
+        except (IndexError, ValueError):
+            return "格式錯誤！請輸入'支出 XXX'"
+    else:
+        return "格式錯誤！請輸入「支出」或「收入」"
+
+# 定義處理用戶輸入的函數
+def save_to_csv(user_id, amount):
+    # csv路徑及標題
+    csv_file = 'user_expenses.csv'
+    fieldnames = ['User ID', 'Amount']
+    
+    # 將數據寫入csv
+    with open(csv_file, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        # 如果csv為空，則寫入標題列
+        if csvfile.tell() == 0:
+            writer.writeheader()
+        
+        # 填寫數據
+        writer.writerow({'User ID': user_id, 'Amount': amount})
+
+import os
+if __name__ == "__main__":
+    # port = int(os.environ.get('PORT', 5000))
+    app.run(debug = True, host='0.0.0.0', port=80)
