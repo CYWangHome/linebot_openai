@@ -4,11 +4,10 @@ from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError
+    InvalidSignatureError, LineBotApiError
 )
 from linebot.models import *
 
-import csv  # 导入CSV模块
 #======python的函數庫==========
 import tempfile, os
 import datetime
@@ -16,20 +15,15 @@ import time
 import traceback
 #======python的函數庫==========
 
-
 app = Flask(__name__)
 static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 # Channel Access Token
 line_bot_api = LineBotApi(os.getenv('CHANNEL_ACCESS_TOKEN'))
 # Channel Secret
 handler = WebhookHandler(os.getenv('CHANNEL_SECRET'))
+# OPENAI API Key初始化設定
+# openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Define a global variable for the CSV file path
-CSV_FILE_PATH = 'user_expenses.csv'
-
-# Open the CSV file in append mode outside the function
-csv_file = open(CSV_FILE_PATH, 'a', newline='')
-writer = csv.DictWriter(csv_file, fieldnames=['User ID', 'Category', 'Amount'])
 
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
@@ -118,9 +112,6 @@ def handle_message(event):
     
     elif text.startswith("收入") or text.startswith("支出"):
         reply_text = handle_account_input(user_id, text)
-        # 保存数据到CSV文件
-        category, amount = text.split()[1], text.split()[2]  # 解析类别和金额
-        save_to_csv(user_id, category, amount)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
     
     else:
@@ -161,26 +152,12 @@ def handle_account_input(user_id, text):
                 neg_acc[user_id].append(amount)
             else:
                 neg_acc[user_id] = [amount]
-            return f"已紀錄：{amount} 元"
+            return f"已紀錄：-{amount} 元"
         except (IndexError, ValueError):
             return "格式錯誤！請輸入'支出 XXX'"
     else:
         return "格式錯誤！請輸入「支出」或「收入」"
 
-
-
-def save_to_csv(user_id, category, amount):
-    try:
-        # Write the data to the CSV file
-        writer.writerow({'User ID': user_id, 'Category': category, 'Amount': amount})
-    except Exception as e:
-        # Handle any errors that occur during writing
-        print(f"Error occurred while writing to CSV: {e}")
-
-# Close the CSV file when the application exits
-@app.teardown_appcontext
-def close_csv_file(exception=None):
-    csv_file.close()
 
 import os
 if __name__ == "__main__":
