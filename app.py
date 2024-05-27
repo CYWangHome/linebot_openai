@@ -104,6 +104,7 @@ def handle_message(event):
 
     elif text == "記帳":
         reply_text = "請輸入「支出」或「收入」"
+        reply_text = handle_account_input(user_id, text)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
     
     elif text == "查看帳本":
