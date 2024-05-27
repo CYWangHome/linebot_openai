@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction
@@ -59,7 +59,6 @@ def callback():
 
     return 'OK'
 
-
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     message = event.message.text
@@ -81,6 +80,9 @@ def handle_message(event):
         ]
         response_message = generate_template_message("支出", "支出選單", "請選擇支出類別", actions)
         line_bot_api.reply_message(reply_token, response_message)
+    elif message == "收入":
+        response_message = TextSendMessage(text="請輸入收入金額，例如: 收入 1000 元")
+        line_bot_api.reply_message(reply_token, response_message)
     elif message == "查看帳本":
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
@@ -91,13 +93,20 @@ def handle_message(event):
     elif message in ["飲食類", "日常類", "娛樂類", "其他"]:
         response_message = TextSendMessage(text=f"請輸入 {message} 支出金額，例如: {message} 100 元")
         line_bot_api.reply_message(reply_token, response_message)
-    elif "元" in message:
+    elif "元" in message and any(category in message for category in ["飲食類", "日常類", "娛樂類", "其他"]):
         parts = message.split()
         category = parts[0]
         amount = int(parts[1].replace("元", ""))
         date = datetime.now().strftime("%Y-%m-%d")
         insert_transaction("支出", category, amount, date)
         response_message = TextSendMessage(text=f"已記錄 {category} 支出 {amount} 元")
+        line_bot_api.reply_message(reply_token, response_message)
+    elif "收入" in message:
+        parts = message.split()
+        amount = int(parts[1].replace("元", ""))
+        date = datetime.now().strftime("%Y-%m-%d")
+        insert_transaction("收入", "收入", amount, date)
+        response_message = TextSendMessage(text=f"已記錄收入 {amount} 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "查詢本日累積":
         date = datetime.now().strftime("%Y-%m-%d")
@@ -119,7 +128,5 @@ def handle_message(event):
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
 
-
 if __name__ == '__main__':
     app.run(port=5000)
-
