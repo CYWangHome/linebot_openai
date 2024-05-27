@@ -145,7 +145,7 @@ def handle_account_input(user_id, text):
             return f"已紀錄：{amount} 元"
         except (IndexError, ValueError):
             return "格式錯誤！請輸入'收入 XXX'"
-    elif text.startswith("支出"):
+    if text.startswith("支出"):
         try:
             amount = int(text.split(" ")[1])
             if user_id in neg_acc:
