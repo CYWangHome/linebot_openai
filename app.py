@@ -117,7 +117,7 @@ def handle_message(event):
         line_bot_api.reply_message(reply_token, response_message)
 
     elif "元" in message:
-        parts = message.split('')
+        parts = message.split()
         category = parts[0]
         amount = int(parts[1].replace("元", ""))
         date = datetime.now().strftime("%Y-%m-%d")
