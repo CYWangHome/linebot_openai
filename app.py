@@ -4,11 +4,10 @@ from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError
+    InvalidSignatureError, LineBotApiError
 )
 from linebot.models import *
 
-import csv  # 导入CSV模块
 #======python的函數庫==========
 import tempfile, os
 import datetime
@@ -16,13 +15,14 @@ import time
 import traceback
 #======python的函數庫==========
 
-
 app = Flask(__name__)
 static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 # Channel Access Token
 line_bot_api = LineBotApi(os.getenv('CHANNEL_ACCESS_TOKEN'))
 # Channel Secret
 handler = WebhookHandler(os.getenv('CHANNEL_SECRET'))
+# OPENAI API Key初始化設定
+# openai.api_key = os.getenv('OPENAI_API_KEY')
 
 
 # 監聽所有來自 /callback 的 Post Request
@@ -111,11 +111,9 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
     
     elif text.startswith("收入") or text.startswith("支出"):
-        reply_text = handle_account_input(user_id, text)        
+        reply_text = handle_account_input(user_id, text)
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-        # 保存数据到CSV文件
-        amount = text.split()[1]  # 解析类别和金额
-        save_to_csv(user_id, amount)
+    
     else:
         reply_text = "請使用「記帳」或「查看帳本」"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
@@ -154,28 +152,12 @@ def handle_account_input(user_id, text):
                 neg_acc[user_id].append(amount)
             else:
                 neg_acc[user_id] = [amount]
-            return f"已紀錄：{amount} 元"
+            return f"已紀錄：-{amount} 元"
         except (IndexError, ValueError):
             return "格式錯誤！請輸入'支出 XXX'"
     else:
         return "格式錯誤！請輸入「支出」或「收入」"
 
-# 定義處理用戶輸入的函數
-def save_to_csv(user_id, amount):
-    # csv路徑及標題
-    csv_file = 'user_expenses.csv'
-    fieldnames = ['User ID', 'Amount']
-    
-    # 將數據寫入csv
-    with open(csv_file, 'a', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
-        # 如果csv為空，則寫入標題列
-        if csvfile.tell() == 0:
-            writer.writeheader()
-        
-        # 填寫數據
-        writer.writerow({'User ID': user_id, 'Amount': amount})
 
 import os
 if __name__ == "__main__":
