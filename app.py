@@ -11,8 +11,15 @@ import logging
 app = Flask(__name__)
 
 # 設置 Channel Access Token 和 Channel Secret
-line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')  # 你需要將這個值替換為你的 Channel Secret
+# line_bot_api = LineBotApi('')
+# handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')  # 你需要將這個值替換為你的 Channel Secret
+
+# 設置 Channel Access Token 和 Channel Secret
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=', 'dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
+LINE_CHANNEL_SECRET = os.getenv('a8a76843cdb27f5cf9c0f72958cb9e4e', 'a8a76843cdb27f5cf9c0f72958cb9e4e')
+
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # 初始化資料庫
 def init_db():
