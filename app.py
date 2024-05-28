@@ -28,7 +28,6 @@ app = Flask(__name__)
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 # Channel Secret
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e'
-
 # 初始化資料庫
 def init_db():
     conn = sqlite3.connect('accounting.db')
@@ -219,4 +218,3 @@ def handle_message(event):
 if __name__ == '__main__':
     init_db()
     app.run(port=5000)
-
