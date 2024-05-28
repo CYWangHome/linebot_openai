@@ -15,7 +15,6 @@ LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET', 'a8a76843cdb27f5cf9c0f729
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
 # 初始化資料庫
 def init_db():
     conn = sqlite3.connect('accounting.db')
