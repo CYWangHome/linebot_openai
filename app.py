@@ -3,14 +3,36 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction
 import sqlite3
+import os
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
 
 # 設置 Channel Access Token 和 Channel Secret
-line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')  # 你需要將這個值替換為你的 Channel Secret
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', 'dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
+LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET', 'a8a76843cdb27f5cf9c0f72958cb9e4e')
 
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
+# 初始化資料庫
+def init_db():
+    conn = sqlite3.connect('accounting.db')
+    c = conn.cursor()
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        date TEXT NOT NULL
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+# 插入交易記錄
 def insert_transaction(trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -18,6 +40,7 @@ def insert_transaction(trans_type, category, amount, date):
     conn.commit()
     conn.close()
 
+# 查詢今天總支出
 def query_today_total(date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -26,6 +49,7 @@ def query_today_total(date):
     conn.close()
     return total_expense
 
+# 查詢本月結餘
 def query_monthly_balance(month):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -37,6 +61,7 @@ def query_monthly_balance(month):
     balance = total_income - total_expense
     return total_income, total_expense, balance
 
+# 生成模板訊息
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
         alt_text=alt_text,
@@ -47,14 +72,19 @@ def generate_template_message(alt_text, title, text, actions):
         )
     )
 
+# 配置日誌
+logging.basicConfig(level=logging.INFO)
+
 @app.route('/callback', methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
+    logging.info(f'Request body: {body}')
 
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
+        logging.error('Invalid signature. Check your channel access token/channel secret.')
         return 'Signature verification failed', 400
 
     return 'OK'
@@ -94,9 +124,11 @@ def handle_message(event):
         response_message = TextSendMessage(text=f"請輸入 {message} 支出金額，例如: {message} 100 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif "元" in message and any(category in message for category in ["飲食類", "日常類", "娛樂類", "其他"]):
-        parts = message.split()
-        category = parts[0]
         try:
+            parts = message.split()
+            if len(parts) != 2:
+                raise ValueError("Incorrect format")
+            category = parts[0]
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
             insert_transaction("支出", category, amount, date)
@@ -105,8 +137,10 @@ def handle_message(event):
             response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 飲食類 100 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif "收入" in message:
-        parts = message.split()
         try:
+            parts = message.split()
+            if len(parts) != 2:
+                raise ValueError("Incorrect format")
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
             insert_transaction("收入", "收入", amount, date)
@@ -132,4 +166,5 @@ def handle_message(event):
         line_bot_api.reply_message(reply_token, response_message)
 
 if __name__ == '__main__':
+    init_db()
     app.run(port=5000)
