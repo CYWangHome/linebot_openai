@@ -1,16 +1,36 @@
 # 0528 
-from flask import Flask, request
+from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ButtonsTemplate, MessageAction
+from linebot.models import *
+import os
 import sqlite3
 from datetime import datetime
+
 
 app = Flask(__name__)
 
 # 設置 Channel Access Token 和 Channel Secret
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')  # 你需要將這個值替換為你的 Channel Secret
+
+# 建立資料庫
+def init_db():
+    conn = sqlite3.connect('accounting.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS transactions (
+            id INTEGER PRIMARY KEY,
+            type TEXT,
+            category TEXT,
+            amount INTEGER,
+            date TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 def insert_transaction(trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
@@ -132,5 +152,6 @@ def handle_message(event):
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
 
-if __name__ == '__main__':
-    app.run(port=5000)
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
