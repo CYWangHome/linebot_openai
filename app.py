@@ -1,4 +1,3 @@
-
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -6,18 +5,13 @@ from linebot.models import *
 import os
 import sqlite3
 from datetime import datetime
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 app = Flask(__name__)
-
-
 # Channel Access Token
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 # Channel Secret
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')
-
-# 初始化資料庫
+# 建立資料庫
 def init_db():
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -35,29 +29,12 @@ def init_db():
 
 init_db()
 
-# 初始化 Google Sheets
-def init_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('certain-upgrade-424713-m5-241cf91f6ed2.json', scope)
-    client = gspread.authorize(creds)
-    return client
-
-# 將交易記錄寫入 Google Sheets
-def insert_transaction_to_sheet(trans_type, category, amount, date):
-    client = init_google_sheets()
-    sheet = client.open("Accounting").sheet1  # 替換 "Accounting" 為你的 Google Sheets 名稱
-    sheet.append_row([trans_type, category, amount, date])
-
-# 插入交易記錄到資料庫和 Google Sheets
 def insert_transaction(trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
     c.execute('INSERT INTO transactions (type, category, amount, date) VALUES (?, ?, ?, ?)', (trans_type, category, amount, date))
     conn.commit()
     conn.close()
-
-    # 將交易記錄寫入 Google Sheets
-    insert_transaction_to_sheet(trans_type, category, amount, date)
 
 def query_today_total(date):
     conn = sqlite3.connect('accounting.db')
