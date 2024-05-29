@@ -90,7 +90,7 @@ def generate_pie_chart(data, title, filename):
     amounts = [item[1] for item in data]
     plt.figure(figsize=(6,6))
     plt.pie(amounts, labels=labels, autopct='%1.1f%%', startangle=140)
-    plt.title(title, fontproperties=FontProperties(fname='/path/to/chinese/font/TaipeiSansTCBeta-Regular.ttf'))  # 替換為你的字體路徑
+    plt.title(title, fontproperties=FontProperties(fname='/usr/share/fonts/truetype/taipei/TaipeiSansTCBeta-Regular.ttf'))  # 使用系統字體
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     plt.savefig(filename)
     plt.close()
