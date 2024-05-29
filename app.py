@@ -41,8 +41,13 @@ def query_today_total(date):
     c = conn.cursor()
     c.execute('SELECT SUM(amount) FROM transactions WHERE date = ? AND type = "支出"', (date,))
     total_expense = c.fetchone()[0] or 0
+    c.execute('SELECT SUM(amount) FROM transactions WHERE date = ?  AND type = "收入"', (date,))
+    total_income = c.fetchone()[0] or 0
     conn.close()
-    return total_expense
+    balance = total_income - total_expense
+
+    return total_income, total_expense, balance
+
 
 def query_monthly_balance(month):
     conn = sqlite3.connect('accounting.db')
@@ -54,6 +59,7 @@ def query_monthly_balance(month):
     conn.close()
     balance = total_income - total_expense
     return total_income, total_expense, balance
+
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -134,8 +140,11 @@ def handle_message(event):
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "查詢本日累積":
         date = datetime.now().strftime("%Y-%m-%d")
-        total_expense = query_today_total(date)
-        response_message = TextSendMessage(text=f"今日支出總和為 {total_expense} 元" if total_expense > 0 else "目前並無紀錄！")
+        total_income, total_expense, balance = query_today_total(date)
+        if total_income == 0 and total_expense == 0:
+            response_message = TextSendMessage(text="目前並無紀錄！")
+        else:
+            response_message = TextSendMessage(text=f"今日收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
