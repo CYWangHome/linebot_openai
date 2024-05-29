@@ -1,10 +1,11 @@
-from flask import Flask, request, abort
+from flask import Flask, request, abort, send_file
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import *
 import os
 import sqlite3
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 # Channel Access Token
@@ -61,6 +62,23 @@ def query_monthly_balance(user_id, month):
     balance = total_income - total_expense
     return total_income, total_expense, balance
 
+def query_category_totals(user_id, month, trans_type):
+    conn = sqlite3.connect('accounting.db')
+    c = conn.cursor()
+    c.execute('SELECT category, SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = ? GROUP BY category', (user_id, f'{month}%', trans_type))
+    result = c.fetchall()
+    conn.close()
+    return result
+
+def generate_pie_chart(data, title, filename):
+    categories = [item[0] for item in data]
+    amounts = [item[1] for item in data]
+    plt.figure(figsize=(6,6))
+    plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140)
+    plt.title(title)
+    plt.savefig(filename)
+    plt.close()
+
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
         alt_text=alt_text,
@@ -82,6 +100,10 @@ def callback():
         return 'Signature verification failed', 400
 
     return 'OK'
+
+@app.route('/images/<filename>')
+def send_image(filename):
+    return send_file(f'images/{filename}', mimetype='image/png')
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -111,7 +133,9 @@ def handle_message(event):
     elif message == "查看帳本":
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
-            MessageAction(label="統計本月結餘", text="統計本月結餘")
+            MessageAction(label="統計本月結餘", text="統計本月結餘"),
+            MessageAction(label="支出圓餅圖", text="支出圓餅圖"),
+            MessageAction(label="收入圓餅圖", text="收入圓餅圖")
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
         line_bot_api.reply_message(reply_token, response_message)
@@ -155,10 +179,34 @@ def handle_message(event):
         else:
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
+    elif message == "支出圓餅圖":
+        month = datetime.now().strftime("%Y-%m")
+        data = query_category_totals(user_id, month, "支出")
+        if data:
+            generate_pie_chart(data, "本月支出分類", "images/expense_pie_chart.png")
+            image_message = ImageSendMessage(original_content_url=request.host_url + 'images/expense_pie_chart.png',
+                                             preview_image_url=request.host_url + 'images/expense_pie_chart.png')
+            line_bot_api.reply_message(reply_token, image_message)
+        else:
+            response_message = TextSendMessage(text="本月並無支出紀錄！")
+            line_bot_api.reply_message(reply_token, response_message)
+    elif message == "收入圓餅圖":
+        month = datetime.now().strftime("%Y-%m")
+        data = query_category_totals(user_id, month, "收入")
+        if data:
+            generate_pie_chart(data, "本月收入分類", "images/income_pie_chart.png")
+            image_message = ImageSendMessage(original_content_url=request.host_url + 'images/income_pie_chart.png',
+                                             preview_image_url=request.host_url + 'images/income_pie_chart.png')
+            line_bot_api.reply_message(reply_token, image_message)
+        else:
+            response_message = TextSendMessage(text="本月並無收入紀錄！")
+            line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
+    if not os.path.exists('images'):
+        os.makedirs('images')
     app.run(host='0.0.0.0', port=port)
