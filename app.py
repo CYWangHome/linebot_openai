@@ -11,6 +11,7 @@ app = Flask(__name__)
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 # Channel Secret
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')
+
 # 建立資料庫
 def init_db():
     conn = sqlite3.connect('accounting.db')
@@ -18,6 +19,7 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY,
+            user_id TEXT,
             type TEXT,
             category TEXT,
             amount INTEGER,
@@ -29,36 +31,35 @@ def init_db():
 
 init_db()
 
-def insert_transaction(trans_type, category, amount, date):
+def insert_transaction(user_id, trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
-    c.execute('INSERT INTO transactions (type, category, amount, date) VALUES (?, ?, ?, ?)', (trans_type, category, amount, date))
+    c.execute('INSERT INTO transactions (user_id, type, category, amount, date) VALUES (?, ?, ?, ?, ?)',
+              (user_id, trans_type, category, amount, date))
     conn.commit()
     conn.close()
 
-def query_today_total(date):
+def query_today_total(user_id, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date = ? AND type = "支出"', (date,))
+    c.execute('SELECT SUM(amount) FROM transactions WHERE user_id = ? AND date = ? AND type = "支出"', (user_id, date))
     total_expense = c.fetchone()[0] or 0
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date = ?  AND type = "收入"', (date,))
-    total_income = c.fetchone()[0] or 0
-    conn.close()
-    balance = total_income - total_expense
-
-    return total_income, total_expense, balance
-
-def query_monthly_balance(month):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date LIKE ? AND type = "支出"', (f'{month}%',))
-    total_expense = c.fetchone()[0] or 0
-    c.execute('SELECT SUM(amount) FROM transactions WHERE date LIKE ? AND type = "收入"', (f'{month}%',))
+    c.execute('SELECT SUM(amount) FROM transactions WHERE user_id = ? AND date = ? AND type = "收入"', (user_id, date))
     total_income = c.fetchone()[0] or 0
     conn.close()
     balance = total_income - total_expense
     return total_income, total_expense, balance
 
+def query_monthly_balance(user_id, month):
+    conn = sqlite3.connect('accounting.db')
+    c = conn.cursor()
+    c.execute('SELECT SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = "支出"', (user_id, f'{month}%'))
+    total_expense = c.fetchone()[0] or 0
+    c.execute('SELECT SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = "收入"', (user_id, f'{month}%'))
+    total_income = c.fetchone()[0] or 0
+    conn.close()
+    balance = total_income - total_expense
+    return total_income, total_expense, balance
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -84,6 +85,7 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    user_id = event.source.user_id
     message = event.message.text
     reply_token = event.reply_token
     
@@ -122,7 +124,7 @@ def handle_message(event):
         try:
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
-            insert_transaction("支出", category, amount, date)
+            insert_transaction(user_id, "支出", category, amount, date)
             response_message = TextSendMessage(text=f"已記錄 {category} 支出 {amount} 元")
         except ValueError:
             response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 飲食類 100 元")
@@ -132,14 +134,14 @@ def handle_message(event):
         try:
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
-            insert_transaction("收入", "收入", amount, date)
+            insert_transaction(user_id, "收入", "收入", amount, date)
             response_message = TextSendMessage(text=f"已記錄收入 {amount} 元")
         except ValueError:
             response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 收入 1000 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "查詢本日累積":
         date = datetime.now().strftime("%Y-%m-%d")
-        total_income, total_expense, balance = query_today_total(date)
+        total_income, total_expense, balance = query_today_total(user_id, date)
         if total_income == 0 and total_expense == 0:
             response_message = TextSendMessage(text="目前並無紀錄！")
         else:
@@ -147,7 +149,7 @@ def handle_message(event):
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
-        total_income, total_expense, balance = query_monthly_balance(month)
+        total_income, total_expense, balance = query_monthly_balance(user_id, month)
         if total_income == 0 and total_expense == 0:
             response_message = TextSendMessage(text="目前並無紀錄！")
         else:
