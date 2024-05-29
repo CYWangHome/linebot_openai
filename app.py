@@ -48,7 +48,6 @@ def query_today_total(date):
 
     return total_income, total_expense, balance
 
-
 def query_monthly_balance(month):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
