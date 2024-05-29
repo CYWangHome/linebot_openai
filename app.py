@@ -84,14 +84,17 @@ def query_all_totals(user_id, month):
     return result
 
 def generate_pie_chart(data, title, filename):
-    labels = [f"{item[0]}-{item[1]}" for item in data]
-    amounts = [item[2] for item in data]
+    if not data:
+        return False
+    labels = [f"{item[0]}" for item in data]
+    amounts = [item[1] for item in data]
     plt.figure(figsize=(6,6))
     plt.pie(amounts, labels=labels, autopct='%1.1f%%', startangle=140)
     plt.title(title, fontproperties=FontProperties(fname='/path/to/chinese/font/TaipeiSansTCBeta-Regular.ttf'))  # 替換為你的字體路徑
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     plt.savefig(filename)
     plt.close()
+    return True
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -149,6 +152,7 @@ def handle_message(event):
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
             MessageAction(label="統計本月結餘", text="統計本月結餘"),
             MessageAction(label="支出圓餅圖", text="支出圓餅圖"),
+            MessageAction(label="收入圓餅圖", text="收入圓餅圖"),
             MessageAction(label="支出與收入圓餅圖", text="支出與收入圓餅圖")
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
@@ -203,21 +207,41 @@ def handle_message(event):
         month = datetime.now().strftime("%Y-%m")
         data = query_category_totals(user_id, month, "支出")
         if data:
-            generate_pie_chart(data, "本月支出分類", "images/expense_pie_chart.png")
-            image_message = ImageSendMessage(original_content_url=request.host_url + 'images/expense_pie_chart.png',
-                                             preview_image_url=request.host_url + 'images/expense_pie_chart.png')
-            line_bot_api.reply_message(reply_token, image_message)
+            if generate_pie_chart(data, "本月支出分類", "images/expense_pie_chart.png"):
+                image_message = ImageSendMessage(original_content_url=request.host_url + 'images/expense_pie_chart.png',
+                                                 preview_image_url=request.host_url + 'images/expense_pie_chart.png')
+                line_bot_api.reply_message(reply_token, image_message)
+            else:
+                response_message = TextSendMessage(text="生成圖表失敗！")
+                line_bot_api.reply_message(reply_token, response_message)
         else:
             response_message = TextSendMessage(text="本月並無支出紀錄！")
+            line_bot_api.reply_message(reply_token, response_message)
+    elif message == "收入圓餅圖":
+        month = datetime.now().strftime("%Y-%m")
+        data = query_category_totals(user_id, month, "收入")
+        if data:
+            if generate_pie_chart(data, "本月收入分類", "images/income_pie_chart.png"):
+                image_message = ImageSendMessage(original_content_url=request.host_url + 'images/income_pie_chart.png',
+                                                 preview_image_url=request.host_url + 'images/income_pie_chart.png')
+                line_bot_api.reply_message(reply_token, image_message)
+            else:
+                response_message = TextSendMessage(text="生成圖表失敗！")
+                line_bot_api.reply_message(reply_token, response_message)
+        else:
+            response_message = TextSendMessage(text="本月並無收入紀錄！")
             line_bot_api.reply_message(reply_token, response_message)
     elif message == "支出與收入圓餅圖":
         month = datetime.now().strftime("%Y-%m")
         data = query_all_totals(user_id, month)
         if data:
-            generate_pie_chart(data, "本月收入與支出分類", "images/mixed_pie_chart.png")
-            image_message = ImageSendMessage(original_content_url=request.host_url + 'images/mixed_pie_chart.png',
-                                             preview_image_url=request.host_url + 'images/mixed_pie_chart.png')
-            line_bot_api.reply_message(reply_token, image_message)
+            if generate_pie_chart(data, "本月收入與支出分類", "images/mixed_pie_chart.png"):
+                image_message = ImageSendMessage(original_content_url=request.host_url + 'images/mixed_pie_chart.png',
+                                                 preview_image_url=request.host_url + 'images/mixed_pie_chart.png')
+                line_bot_api.reply_message(reply_token, image_message)
+            else:
+                response_message = TextSendMessage(text="生成圖表失敗！")
+                line_bot_api.reply_message(reply_token, response_message)
         else:
             response_message = TextSendMessage(text="本月並無記錄！")
             line_bot_api.reply_message(reply_token, response_message)
