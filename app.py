@@ -6,6 +6,7 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
 
 app = Flask(__name__)
 # Channel Access Token
@@ -78,6 +79,7 @@ def query_expenses_by_category(user_id, month):
     return result
 
 def plot_expense_pie_chart(user_id, month):
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
