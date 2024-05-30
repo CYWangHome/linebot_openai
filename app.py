@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, send_file
+from flask import Flask, request, abort, send_from_directory
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import *
@@ -32,7 +32,6 @@ def init_db():
     conn.close()
 
 init_db()
-
 
 def insert_transaction(user_id, trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
@@ -80,7 +79,7 @@ def generate_pie_chart(total_income, total_expense):
     ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     
     plt.title('今日收入與支出比例', fontproperties=prop)
-    chart_path = 'daily_pie_chart.png'
+    chart_path = 'static/daily_pie_chart.png'
     plt.savefig(chart_path)
     plt.close()
     return chart_path
@@ -107,9 +106,9 @@ def callback():
 
     return 'OK'
 
-@app.route('/image/<image_name>')
+@app.route('/static/<path:image_name>')
 def serve_image(image_name):
-    return send_file(image_name, mimetype='image/png')
+    return send_from_directory('static', image_name)
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -174,15 +173,15 @@ def handle_message(event):
         if total_income == 0 and total_expense == 0:
             response_message = TextSendMessage(text="目前並無紀錄！")
         else:
-            response_message = TextSendMessage(text=f"今日收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
+            response_message = TextSendMessage(text=f"本日收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "今日收支圓餅圖":
         date = datetime.now().strftime("%Y-%m-%d")
         total_income, total_expense, balance = query_today_total(user_id, date)
         chart_path = generate_pie_chart(total_income, total_expense)
         response_message = ImageSendMessage(
-            original_content_url=f'https://your-server.com/image/{chart_path}',
-            preview_image_url=f'https://your-server.com/image/{chart_path}'
+            original_content_url=f'https://your-server.com/static/{chart_path}',
+            preview_image_url=f'https://your-server.com/static/{chart_path}'
         )
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
@@ -196,7 +195,7 @@ def handle_message(event):
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
-
+    
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
