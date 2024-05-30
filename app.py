@@ -183,17 +183,6 @@ def handle_message(event):
         else:
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
-    elif message == "支出圓餅圖":
-        month = datetime.now().strftime("%Y-%m")
-        data = query_category_totals(user_id, month, "支出")
-        if data:
-            generate_pie_chart(data, "本月支出分類", "images/expense_pie_chart.png")
-            image_message = ImageSendMessage(original_content_url=request.host_url + 'images/expense_pie_chart.png',
-                                             preview_image_url=request.host_url + 'images/expense_pie_chart.png')
-            line_bot_api.reply_message(reply_token, image_message)
-        else:
-            response_message = TextSendMessage(text="本月並無支出紀錄！")
-            line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
