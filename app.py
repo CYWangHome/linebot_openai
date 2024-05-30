@@ -6,7 +6,9 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
+plt.rcParams['axes.unicode_minus'] = False
 
 app = Flask(__name__)
 # Channel Access Token
@@ -79,7 +81,7 @@ def query_expenses_by_category(user_id, month):
     return result
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
@@ -101,6 +103,26 @@ def generate_template_message(alt_text, title, text, actions):
             actions=actions
         )
     )
+
+def generate_pie_chart(user_id):
+    date = datetime.now().strftime("%Y-%m-%d")
+    conn = sqlite3.connect('accounting.db')
+    c = conn.cursor()
+    c.execute('SELECT type, SUM(amount) FROM transactions WHERE user_id = ? AND date = ? GROUP BY type', (user_id, date))
+    result = c.fetchall()
+    conn.close()
+
+    if not result:
+        return None
+
+    labels, amounts = zip(*result)
+    plt.figure(figsize=(6, 6))
+    plt.pie(amounts, labels=labels, autopct='%1.1f%%', startangle=140)
+    plt.axis('equal')
+    file_path = f'./static/{user_id}_daily_pie_chart.png'
+    plt.savefig(file_path)
+    plt.close()
+    return file_path
 
 @app.route('/callback', methods=['POST'])
 def callback():
@@ -143,7 +165,7 @@ def handle_message(event):
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
             MessageAction(label="統計本月結餘", text="統計本月結餘"),
-            MessageAction(label="支出圓形圖", text="支出圓形圖")
+            MessageAction(label="支出圓形圖", text="支出圓形圖"),
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
         line_bot_api.reply_message(reply_token, response_message)
