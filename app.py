@@ -6,18 +6,13 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 app = Flask(__name__)
 # Channel Access Token
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
 # Channel Secret
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')
-
-# 初始化資料庫和靜態目錄
-def init_app():
-    init_db()
-    if not os.path.exists('static'):
-        os.makedirs('static')
 
 # 建立資料庫
 def init_db():
@@ -68,27 +63,26 @@ def query_monthly_balance(user_id, month):
     balance = total_income - total_expense
     return total_income, total_expense, balance
 
-def query_expenses_by_category(user_id, month):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('SELECT category, SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = "支出" GROUP BY category', 
-              (user_id, f'{month}%'))
-    result = c.fetchall()
-    conn.close()
-    return result
+def generate_pie_chart(total_income, total_expense):
+    labels = ['收入', '支出']
+    sizes = [total_income, total_expense]
+    colors = ['#ff9999','#66b3ff']
+    explode = (0.1, 0)  # "explode" the 1st slice (i.e. 'Income')
 
-def plot_expense_pie_chart(user_id, month):
-    data = query_expenses_by_category(user_id, month)
-    if not data:
-        return None
-    categories, amounts = zip(*data)
-    plt.figure(figsize=(6, 6))
-    plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140)
-    plt.axis('equal')
-    file_path = f'./static/{user_id}_expense_pie_chart.png'
-    plt.savefig(file_path)
+    # 設置中文字體
+    font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'  # 根據需要修改路徑
+    prop = fm.FontProperties(fname=font_path)
+
+    fig1, ax1 = plt.subplots()
+    ax1.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
+            shadow=True, startangle=90, textprops={'fontproperties': prop})
+    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    
+    plt.title('今日收入與支出比例', fontproperties=prop)
+    chart_path = 'daily_pie_chart.png'
+    plt.savefig(chart_path)
     plt.close()
-    return file_path
+    return chart_path
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -111,6 +105,10 @@ def callback():
         return 'Signature verification failed', 400
 
     return 'OK'
+
+@app.route('/image/<image_name>')
+def serve_image(image_name):
+    return send_file(image_name, mimetype='image/png')
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -141,7 +139,7 @@ def handle_message(event):
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
             MessageAction(label="統計本月結餘", text="統計本月結餘"),
-            MessageAction(label="支出圓形圖", text="支出圓形圖")
+            MessageAction(label="今日收支圓餅圖", text="今日收支圓餅圖")
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
         line_bot_api.reply_message(reply_token, response_message)
@@ -177,6 +175,15 @@ def handle_message(event):
         else:
             response_message = TextSendMessage(text=f"今日收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
+    elif message == "今日收支圓餅圖":
+        date = datetime.now().strftime("%Y-%m-%d")
+        total_income, total_expense, balance = query_today_total(user_id, date)
+        chart_path = generate_pie_chart(total_income, total_expense)
+        response_message = ImageSendMessage(
+            original_content_url=f'https://your-server.com/image/{chart_path}',
+            preview_image_url=f'https://your-server.com/image/{chart_path}'
+        )
+        line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
         total_income, total_expense, balance = query_monthly_balance(user_id, month)
@@ -185,16 +192,6 @@ def handle_message(event):
         else:
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         line_bot_api.reply_message(reply_token, response_message)
-    elif message == "支出圓形圖":
-        month = datetime.now().strftime("%Y-%m")
-        chart_path = plot_expense_pie_chart(user_id, month)
-        if chart_path:
-            image_message = ImageSendMessage(original_content_url=f"{request.url_root}static/{os.path.basename(chart_path)}",
-                                             preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
-            line_bot_api.reply_message(reply_token, image_message)
-        else:
-            response_message = TextSendMessage(text="目前並無支出紀錄！")
-            line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
