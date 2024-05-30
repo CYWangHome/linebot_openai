@@ -7,9 +7,6 @@ import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
-plt.rcParams['axes.unicode_minus'] = False
-
 app = Flask(__name__)
 # Channel Access Token
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
@@ -81,17 +78,10 @@ def query_expenses_by_category(user_id, month):
     return result
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
-
     categories, amounts = zip(*data)
-    
-    # 檢查是否存在有效數據
-    if not amounts:
-        return None
-    
     plt.figure(figsize=(6, 6))
     plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140)
     plt.axis('equal')
@@ -151,8 +141,7 @@ def handle_message(event):
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
             MessageAction(label="統計本月結餘", text="統計本月結餘"),
-            MessageAction(label="支出圓形圖", text="支出圓形圖"),
-            MessageAction(label="今日收支圓餅圖", text="今日收支圓餅圖")
+            MessageAction(label="支出圓形圖", text="支出圓形圖")
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
         line_bot_api.reply_message(reply_token, response_message)
@@ -205,15 +194,6 @@ def handle_message(event):
             line_bot_api.reply_message(reply_token, image_message)
         else:
             response_message = TextSendMessage(text="目前並無支出紀錄！")
-            line_bot_api.reply_message(reply_token, response_message)
-    elif message == "今日收支圓餅圖":
-        chart_path = generate_pie_chart(user_id)
-        if chart_path:
-            image_message = ImageSendMessage(original_content_url=f"{request.url_root}static/{os.path.basename(chart_path)}",
-                                             preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
-            line_bot_api.reply_message(reply_token, image_message)
-        else:
-            response_message = TextSendMessage(text="目前並無今日收支紀錄！")
             line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
