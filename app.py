@@ -14,7 +14,10 @@ line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH
 # Channel Secret
 handler = WebhookHandler('a8a76843cdb27f5cf9c0f72958cb9e4e')
 
-
+# 中文亂碼問題
+def plt_chinese():
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] # 修改中文字體
+    plt.rcParams['axes.unicode_minus'] = False # 顯示負號
 
 # 建立資料庫
 def init_db():
@@ -74,6 +77,7 @@ def query_category_totals(user_id, month, trans_type):
     return result
 
 def generate_pie_chart(data, title, filename):
+    plt_chinese
     categories = [item[0] for item in data]
     amounts = [item[1] for item in data]
     plt.figure(figsize=(6,6))
