@@ -33,6 +33,7 @@ def init_db():
 
 init_db()
 
+
 def insert_transaction(user_id, trans_type, category, amount, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
