@@ -99,7 +99,6 @@ def plot_expense_pie_chart(user_id, month):
         print("找不到圓餅圖的數據。")
         return None
 
-    # 類別中英文對照表
     category_map = {
         "飲食類": "Food",
         "日常類": "Daily Necessities",
@@ -107,28 +106,27 @@ def plot_expense_pie_chart(user_id, month):
         "其他": "Others"
     }
 
-    # 將中文的類別轉換成英文的
     categories, amounts = zip(*[(category_map.get(cat, "Other"), amt) for cat, amt in data])
-    colors = list(mcolors.TABLEAU_COLORS)  #使用預定義的顏色集
+    colors = list(mcolors.TABLEAU_COLORS)
 
-    # 確保顏色數量足夠
     while len(colors) < len(categories):
         colors += colors[:len(categories) - len(colors)]
 
-    plt.figure(figsize=(8, 6))
+    # 增加圖例
+    plt.figure(figsize=(10, 8)) 
     try:
         wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
-        # 調整圖例位置，將 x 值調整到更靠近圖形的位置
-        plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1.2, 0.5))
-        plt.axis('equal')  # 等比例確保為圓形
+        plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1, 1))
+        plt.axis('equal')
         file_path = f'./static/{user_id}_expense_pie_chart.png'
-        plt.savefig(file_path)
+        plt.savefig(file_path, bbox_inches='tight')  # 嘗試解決圖例被裁減的問題
         plt.close()
         print(f"圓餅圖已儲存到 {file_path}")
         return file_path
     except Exception as e:
         print(f"生成圓餅圖時出錯: {e}")
         return None
+
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
