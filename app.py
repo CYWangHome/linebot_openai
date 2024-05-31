@@ -6,8 +6,6 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-
 plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
 
 app = Flask(__name__)
