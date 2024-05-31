@@ -6,6 +6,7 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
 
 app = Flask(__name__)
@@ -79,25 +80,31 @@ def query_expenses_by_category(user_id, month):
     return result
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
 
+    # 使用預定義的顏色集
     categories, amounts = zip(*data)
-    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
+    colors = list(mcolors.TABLEAU_COLORS)  
+
     # 確保顏色數量足夠
-    if len(categories) > len(colors):
+    while len(colors) < len(categories):
         colors += colors[:len(categories) - len(colors)]
 
     plt.figure(figsize=(8, 6))
-    wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors, textprops=dict(color="black"))
-    plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-    file_path = f'./static/{user_id}_expense_pie_chart.png'
-    plt.savefig(file_path)
-    plt.close()
-    return file_path
+    try:
+        wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
+        plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        file_path = f'./static/{user_id}_expense_pie_chart.png'
+        plt.savefig(file_path)
+        plt.close()
+        return file_path
+    except Exception as e:
+        print(f"Error generating pie chart: {e}")
+        return None
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -202,11 +209,12 @@ def handle_message(event):
                                              preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
             line_bot_api.reply_message(reply_token, image_message)
         else:
-            response_message = TextSendMessage(text="目前並無支出紀錄！")
+            response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
             line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
