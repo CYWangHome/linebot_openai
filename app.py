@@ -227,16 +227,16 @@ def handle_message(event):
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         print(f"Queried monthly balance: {user_id}, {month}, Income: {total_income}, Expense: {total_expense}, Balance: {balance}")
         line_bot_api.reply_message(reply_token, response_message)
-    elif message == "支出圓形圖":
-        month = datetime.now().strftime("%Y-%m")
-        print(f"Generating pie chart for user {user_id} for month {month}")
-        chart_path = plot_expense_pie_chart(user_id, month)
-        if chart_path:
-            image_message = ImageSendMessage(original_content_url=f"{request.url_root}static/{os.path.basename(chart_path)}",
-                                             preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
-            print(f"Generated pie chart for {user_id} for month {month}: {chart_path}")
-            line_bot_api.reply_message(reply_token, image_message)
-        else:
+    if message == "支出圓形圖":
+        # 暫時使用預設圖像
+        image_url = "https://drive.google.com/uc?export=view&id=1OZVy-XwP3lDD3WhX5t5O0-H--MlOMJIL"
+        image_message = ImageSendMessage(
+            original_content_url=image_url,
+            preview_image_url=image_url
+        )
+        line_bot_api.reply_message(reply_token, image_message)
+        print(f"Sent preset pie chart image to {user_id}")
+    else:
             response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
             print(f"Failed to generate pie chart for {user_id} for month {month}")
             line_bot_api.reply_message(reply_token, response_message)
