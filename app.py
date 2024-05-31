@@ -109,7 +109,7 @@ def plot_expense_pie_chart(user_id, month):
     categories, amounts = zip(*[(category_map.get(cat, "Other"), amt) for cat, amt in data])
 
     # 自定義顏色
-    custom_colors = ['#9ebcda', '#8c96c6', '#8c6bb1', '#88419d'] 
+    custom_colors = ['#ffc176', '#ffdc74', '#ffe9b3', '#d7dace'] 
     
     plt.figure(figsize=(10, 8))
     wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=custom_colors, textprops={'color':"w", 'weight':'bold', 'fontsize':16})
