@@ -92,6 +92,16 @@ def query_expenses_by_category(user_id, month):
         print(f"Error querying expenses by category: {e}")
         return []
 
+def get_category_colors():
+    # 定義每個支出類別對應的顏色
+    category_colors = {
+        "飲食類": "gold",
+        "日常類": "lightcoral",
+        "娛樂類": "lightskyblue",
+        "其他": "lightgreen",
+    }
+    return category_colors
+
 def plot_expense_pie_chart(user_id, month):
     plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
@@ -100,19 +110,16 @@ def plot_expense_pie_chart(user_id, month):
         return None
 
     categories, amounts = zip(*data)
-    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
-
-    # 確保顏色數量足夠
-    while len(colors) < len(categories):
-        colors += colors[:len(categories) - len(colors)]
+    category_colors = get_category_colors()
+    colors = [category_colors.get(cat, "gray") for cat in categories]  # 使用預先定義的顏色或預設灰色
 
     plt.figure(figsize=(8, 6))
     try:
-        wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
+        wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors, textprops=dict(color="black"))
         plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        plt.axis('equal')  # 確保畫出來是圓形的
         file_path = f'./static/{user_id}_expense_pie_chart.png'
-        plt.savefig(file_path)
+        plt.savefig(file_path, dpi=300)  # 使用較高的dpi保存圖像
         plt.close()
         print(f"Saved pie chart to {file_path}")
         return file_path
