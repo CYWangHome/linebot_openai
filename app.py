@@ -82,6 +82,7 @@ def plot_expense_pie_chart(user_id, month):
     plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']  # 確認字體存在
     data = query_expenses_by_category(user_id, month)
     if not data:
+        print("No data found for plotting")
         return None
     categories, amounts = zip(*data)
     plt.figure(figsize=(6, 6))
@@ -90,6 +91,10 @@ def plot_expense_pie_chart(user_id, month):
     file_path = f'./static/{user_id}_expense_pie_chart.png'
     plt.savefig(file_path)
     plt.close()
+    if os.path.exists(file_path):
+        print(f"File saved successfully at {file_path}")
+    else:
+        print(f"Failed to save file at {file_path}")
     return file_path
 
 # 新增的靜態檔案路由
@@ -197,6 +202,7 @@ def handle_message(event):
         chart_path = plot_expense_pie_chart(user_id, month)
         if chart_path:
             image_url = f"{request.url_root}static/{os.path.basename(chart_path)}"
+            print(f"Generated image URL: {image_url}")
             image_message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
             line_bot_api.reply_message(reply_token, image_message)
         else:
@@ -205,6 +211,7 @@ def handle_message(event):
     else:
         response_message = TextSendMessage(text="無效的指令")
         line_bot_api.reply_message(reply_token, response_message)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
