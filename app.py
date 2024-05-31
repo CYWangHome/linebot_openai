@@ -41,13 +41,16 @@ def init_db():
 init_db()
 
 def insert_transaction(user_id, trans_type, category, amount, date):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('INSERT INTO transactions (user_id, type, category, amount, date) VALUES (?, ?, ?, ?, ?)',
-              (user_id, trans_type, category, amount, date))
-    conn.commit()
-    conn.close()
-    print(f"Inserted transaction: {user_id}, {trans_type}, {category}, {amount}, {date}")
+    try:
+        conn = sqlite3.connect('accounting.db')
+        c = conn.cursor()
+        c.execute('INSERT INTO transactions (user_id, type, category, amount, date) VALUES (?, ?, ?, ?, ?)',
+                  (user_id, trans_type, category, amount, date))
+        conn.commit()
+        conn.close()
+        print(f"Inserted transaction: {user_id}, {trans_type}, {category}, {amount}, {date}")
+    except Exception as e:
+        print(f"Error inserting transaction: {e}")
 
 def query_today_total(user_id, date):
     conn = sqlite3.connect('accounting.db')
@@ -72,14 +75,18 @@ def query_monthly_balance(user_id, month):
     return total_income, total_expense, balance
 
 def query_expenses_by_category(user_id, month):
-    conn = sqlite3.connect('accounting.db')
-    c = conn.cursor()
-    c.execute('SELECT category, SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = "支出" GROUP BY category', 
-              (user_id, f'{month}%'))
-    result = c.fetchall()
-    conn.close()
-    print(f"Queried expenses by category for {user_id} in {month}: {result}")
-    return result
+    try:
+        conn = sqlite3.connect('accounting.db')
+        c = conn.cursor()
+        c.execute('SELECT category, SUM(amount) FROM transactions WHERE user_id = ? AND date LIKE ? AND type = "支出" GROUP BY category', 
+                  (user_id, f'{month}%'))
+        result = c.fetchall()
+        conn.close()
+        print(f"Queried expenses by category for {user_id} in {month}: {result}")
+        return result
+    except Exception as e:
+        print(f"Error querying expenses by category: {e}")
+        return []
 
 def plot_expense_pie_chart(user_id, month):
     plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
