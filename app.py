@@ -7,7 +7,7 @@ import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 
 app = Flask(__name__)
 # Channel Access Token
@@ -56,7 +56,6 @@ def insert_transaction(user_id, trans_type, category, amount, date):
     except Exception as e:
         print(f"Error inserting transaction: {e}")
 
-
 def query_today_total(user_id, date):
     conn = sqlite3.connect('accounting.db')
     c = conn.cursor()
@@ -94,27 +93,24 @@ def query_expenses_by_category(user_id, month):
         return []
 
 def plot_expense_pie_chart(user_id, month):
-    import matplotlib.pyplot as plt
-    import matplotlib
-    matplotlib.rcParams['font.sans-serif'] = ['SimHei']
-    matplotlib.rcParams['axes.unicode_minus'] = False
-
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
         print("No data found for pie chart.")
         return None
 
     categories, amounts = zip(*data)
-    colors = list(matplotlib.colors.TABLEAU_COLORS.values())
+    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
 
+    # 確保顏色數量足夠
     while len(colors) < len(categories):
-        colors.extend(colors)
+        colors += colors[:len(categories) - len(colors)]
 
     plt.figure(figsize=(8, 6))
     try:
         wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
         plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-        plt.axis('equal')
+        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
         file_path = f'./static/{user_id}_expense_pie_chart.png'
         plt.savefig(file_path)
         plt.close()
@@ -233,9 +229,13 @@ def handle_message(event):
                                              preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
             print(f"Generated pie chart for {user_id} for month {month}: {chart_path}")
             line_bot_api.reply_message(reply_token, image_message)
+        else:
+            response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
+            print(f"Failed to generate pie chart for {user_id} for month {month}")
+            line_bot_api.reply_message(reply_token, response_message)
     else:
-        response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
-        print(f"Failed to generate pie chart for {user_id} for month {month}")
+        response_message = TextSendMessage(text="無效的指令")
+        print(f"Invalid command from {user_id}: {message}")
         line_bot_api.reply_message(reply_token, response_message)
 
 if __name__ == "__main__":
