@@ -236,7 +236,7 @@ def handle_message(event):
         )
         line_bot_api.reply_message(reply_token, image_message)
         print(f"Sent preset pie chart image to {user_id}")
-    else:
+    elif:
             response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
             print(f"Failed to generate pie chart for {user_id} for month {month}")
             line_bot_api.reply_message(reply_token, response_message)
