@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 
+
 app = Flask(__name__)
 # Channel Access Token
 line_bot_api = LineBotApi('dR8PuPiW2RtOoJiBdPttAWPYH4hLrc0VJZBUGyMh3p2t9ySc+ktRH91CbyBc62kXEJJbCM4QyFZQm6HhatTLZlCvtDPfF2honnDhtCZLuS8gMkt9rmh+Cc/R+UDPJiYRyXEnJQ2j6uATOaSDGCSSdQdB04t89/1O/w1cDnyilFU=')
