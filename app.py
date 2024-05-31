@@ -6,9 +6,9 @@ import os
 import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+import matplotlib.colors as mcolors
 
-# 
+plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
 
 app = Flask(__name__)
 # Channel Access Token
@@ -85,10 +85,17 @@ def plot_expense_pie_chart(user_id, month):
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
+
     categories, amounts = zip(*data)
-    plt.figure(figsize=(6, 6))
-    plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140)
-    plt.axis('equal')
+    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
+    # 確保顏色數量足夠
+    if len(categories) > len(colors):
+        colors += colors[:len(categories) - len(colors)]
+
+    plt.figure(figsize=(8, 6))
+    wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors, textprops=dict(color="black"))
+    plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     file_path = f'./static/{user_id}_expense_pie_chart.png'
     plt.savefig(file_path)
     plt.close()
