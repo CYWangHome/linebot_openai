@@ -118,8 +118,8 @@ def plot_expense_pie_chart(user_id, month):
     plt.figure(figsize=(8, 6))
     try:
         wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
-        # 調整圖例位置
-        plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(3.0, 0.5))
+        # 調整圖例位置，將 x 值調整到更靠近圖形的位置
+        plt.legend(wedges, categories, title="Categories", loc="center left", bbox_to_anchor=(1.2, 0.5))
         plt.axis('equal')  # 等比例確保為圓形
         file_path = f'./static/{user_id}_expense_pie_chart.png'
         plt.savefig(file_path)
