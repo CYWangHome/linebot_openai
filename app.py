@@ -99,10 +99,19 @@ def plot_expense_pie_chart(user_id, month):
         print("No data found for pie chart.")
         return None
 
-    categories, amounts = zip(*data)
-    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
+    # 类别中英文映射表
+    category_map = {
+        "飲食類": "Food",
+        "日常類": "Daily Necessities",
+        "娛樂類": "Entertainment",
+        "其他": "Others"
+    }
 
-    # 確保顏色數量足夠
+    # 将中文类别名转换为英文
+    categories, amounts = zip(*[(category_map.get(cat, "Other"), amt) for cat, amt in data])
+    colors = list(mcolors.TABLEAU_COLORS)  # 使用预定义的颜色集
+
+    # 确保颜色数量足够
     while len(colors) < len(categories):
         colors += colors[:len(categories) - len(colors)]
 
@@ -119,6 +128,7 @@ def plot_expense_pie_chart(user_id, month):
     except Exception as e:
         print(f"Error generating pie chart: {e}")
         return None
+
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
