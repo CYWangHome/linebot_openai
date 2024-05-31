@@ -117,7 +117,7 @@ def plot_expense_pie_chart(user_id, month):
     for text in autotexts:
         text.set_color('white')
         text.set_weight('bold')
-        text.set_size(30)
+        text.set_size(25)
 
     plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1.2, 1))
     plt.axis('equal')
