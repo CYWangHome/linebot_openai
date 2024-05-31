@@ -93,8 +93,7 @@ def query_expenses_by_category(user_id, month):
         return []
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS'] 
-    plt.rcParams['axes.unicode_minus'] = False  
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
         print("找不到圓餅圖的數據。")
@@ -107,28 +106,23 @@ def plot_expense_pie_chart(user_id, month):
         "其他": "Others"
     }
 
-    # 使用預定義顏色
     categories, amounts = zip(*[(category_map.get(cat, "Other"), amt) for cat, amt in data])
-    colors = list(mcolors.TABLEAU_COLORS) 
 
-    while len(colors) < len(categories):
-        colors += colors[:len(categories) - len(colors)]
-
-    plt.figure(figsize=(10, 8)) 
-    wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops={'color':"w", 'weight':'bold', 'fontsize':16})
-
-    # 調整文字
-    for text in autotexts:  
+    # 自定義顏色
+    custom_colors = ['#a6bddb', '#9ebcda', '#8c96c6', '#8c6bb1', '#88419d'] 
+    
+    plt.figure(figsize=(10, 8))
+    wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=custom_colors, textprops={'color':"w", 'weight':'bold', 'fontsize':16})
+    
+    for text in autotexts:
         text.set_color('white')
         text.set_weight('bold')
-        text.set_size(12)
+        text.set_size(30)
 
-    # 調整圖例位置
-    plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1, 1), framealpha=0.6)
-    plt.axis('equal')  # 保持圓型
-
+    plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1.2, 1))
+    plt.axis('equal')
     file_path = f'./static/{user_id}_expense_pie_chart.png'
-    plt.savefig(file_path, bbox_inches='tight') 
+    plt.savefig(file_path, bbox_inches='tight')
     plt.close()
     print(f"圓餅圖已儲存到 {file_path}")
     return file_path
