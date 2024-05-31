@@ -47,6 +47,7 @@ def insert_transaction(user_id, trans_type, category, amount, date):
               (user_id, trans_type, category, amount, date))
     conn.commit()
     conn.close()
+    print(f"Inserted transaction: {user_id}, {trans_type}, {category}, {amount}, {date}")
 
 def query_today_total(user_id, date):
     conn = sqlite3.connect('accounting.db')
@@ -77,17 +78,18 @@ def query_expenses_by_category(user_id, month):
               (user_id, f'{month}%'))
     result = c.fetchall()
     conn.close()
+    print(f"Queried expenses by category for {user_id} in {month}: {result}")
     return result
 
 def plot_expense_pie_chart(user_id, month):
     plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
     data = query_expenses_by_category(user_id, month)
     if not data:
+        print("No data found for pie chart.")
         return None
 
-    # 使用預定義的顏色集
     categories, amounts = zip(*data)
-    colors = list(mcolors.TABLEAU_COLORS)  
+    colors = list(mcolors.TABLEAU_COLORS)  # 使用預定義的顏色集
 
     # 確保顏色數量足夠
     while len(colors) < len(categories):
@@ -101,6 +103,7 @@ def plot_expense_pie_chart(user_id, month):
         file_path = f'./static/{user_id}_expense_pie_chart.png'
         plt.savefig(file_path)
         plt.close()
+        print(f"Saved pie chart to {file_path}")
         return file_path
     except Exception as e:
         print(f"Error generating pie chart: {e}")
@@ -133,7 +136,8 @@ def handle_message(event):
     user_id = event.source.user_id
     message = event.message.text
     reply_token = event.reply_token
-    
+    print(f"Received message from {user_id}: {message}")
+
     if message == "記帳":
         actions = [
             MessageAction(label="支出", text="支出"),
@@ -171,6 +175,7 @@ def handle_message(event):
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
             insert_transaction(user_id, "支出", category, amount, date)
+            print(f"Inserted expense transaction: {user_id}, {category}, {amount}, {date}")
             response_message = TextSendMessage(text=f"已記錄 {category} 支出 {amount} 元")
         except ValueError:
             response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 飲食類 100 元")
@@ -181,6 +186,7 @@ def handle_message(event):
             amount = int(parts[1].replace("元", ""))
             date = datetime.now().strftime("%Y-%m-%d")
             insert_transaction(user_id, "收入", "收入", amount, date)
+            print(f"Inserted income transaction: {user_id}, 收入, {amount}, {date}")
             response_message = TextSendMessage(text=f"已記錄收入 {amount} 元")
         except ValueError:
             response_message = TextSendMessage(text="請確保金額為有效的整數，例如: 收入 1000 元")
@@ -192,6 +198,7 @@ def handle_message(event):
             response_message = TextSendMessage(text="目前並無紀錄！")
         else:
             response_message = TextSendMessage(text=f"今日收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
+        print(f"Queried today's total: {user_id}, {date}, Income: {total_income}, Expense: {total_expense}, Balance: {balance}")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "統計本月結餘":
         month = datetime.now().strftime("%Y-%m")
@@ -200,6 +207,7 @@ def handle_message(event):
             response_message = TextSendMessage(text="目前並無紀錄！")
         else:
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
+        print(f"Queried monthly balance: {user_id}, {month}, Income: {total_income}, Expense: {total_expense}, Balance: {balance}")
         line_bot_api.reply_message(reply_token, response_message)
     elif message == "支出圓形圖":
         month = datetime.now().strftime("%Y-%m")
@@ -207,14 +215,16 @@ def handle_message(event):
         if chart_path:
             image_message = ImageSendMessage(original_content_url=f"{request.url_root}static/{os.path.basename(chart_path)}",
                                              preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
+            print(f"Generated pie chart for {user_id} for month {month}: {chart_path}")
             line_bot_api.reply_message(reply_token, image_message)
         else:
             response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
+            print(f"Failed to generate pie chart for {user_id} for month {month}")
             line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
+        print(f"Invalid command from {user_id}: {message}")
         line_bot_api.reply_message(reply_token, response_message)
-
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
