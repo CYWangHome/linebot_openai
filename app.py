@@ -7,7 +7,7 @@ import sqlite3
 from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 
 app = Flask(__name__)
 # Channel Access Token
@@ -55,7 +55,6 @@ def insert_transaction(user_id, trans_type, category, amount, date):
         conn.close()
     except Exception as e:
         print(f"Error inserting transaction: {e}")
-
 
 def query_today_total(user_id, date):
     conn = sqlite3.connect('accounting.db')
@@ -230,16 +229,21 @@ def handle_message(event):
                                              preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
             print(f"Generated pie chart for {user_id} for month {month}: {chart_path}")
             line_bot_api.reply_message(reply_token, image_message)
-    else:
-        response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
-        print(f"Failed to generate pie chart for {user_id} for month {month}")
-        line_bot_api.reply_message(reply_token, response_message)
-
+        else:
+            response_message = TextSendMessage(text="目前並無支出紀錄或生成圓形圖時發生錯誤！")
+            print(f"Failed to generate pie chart for {user_id} for month {month}")
+            line_bot_api.reply_message(reply_token, response_message)
     else:
         response_message = TextSendMessage(text="無效的指令")
         print(f"Invalid command from {user_id}: {message}")
         line_bot_api.reply_message(reply_token, response_message)
 
+# 全局錯誤處理
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print(f"An error occurred: {e}")
+    return str(e), 500
+
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
