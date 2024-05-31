@@ -93,7 +93,8 @@ def query_expenses_by_category(user_id, month):
         return []
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS'] 
+    plt.rcParams['axes.unicode_minus'] = False  
     data = query_expenses_by_category(user_id, month)
     if not data:
         print("找不到圓餅圖的數據。")
@@ -106,27 +107,31 @@ def plot_expense_pie_chart(user_id, month):
         "其他": "Others"
     }
 
+    # 使用預定義顏色
     categories, amounts = zip(*[(category_map.get(cat, "Other"), amt) for cat, amt in data])
-    colors = list(mcolors.TABLEAU_COLORS)
+    colors = list(mcolors.TABLEAU_COLORS) 
 
     while len(colors) < len(categories):
         colors += colors[:len(categories) - len(colors)]
 
-    # 增加圖例
     plt.figure(figsize=(10, 8)) 
-    try:
-        wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops=dict(color="black"))
-        plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1, 1))
-        plt.axis('equal')
-        file_path = f'./static/{user_id}_expense_pie_chart.png'
-        plt.savefig(file_path, bbox_inches='tight')  # 嘗試解決圖例被裁減的問題
-        plt.close()
-        print(f"圓餅圖已儲存到 {file_path}")
-        return file_path
-    except Exception as e:
-        print(f"生成圓餅圖時出錯: {e}")
-        return None
+    wedges, texts, autotexts = plt.pie(amounts, labels=categories, autopct='%1.1f%%', startangle=140, colors=colors[:len(categories)], textprops={'color':"w", 'weight':'bold', 'fontsize':16})
 
+    # 調整文字
+    for text in autotexts:  
+        text.set_color('white')
+        text.set_weight('bold')
+        text.set_size(12)
+
+    # 調整圖例位置
+    plt.legend(wedges, categories, title="Categories", loc="upper right", bbox_to_anchor=(1, 1), framealpha=0.6)
+    plt.axis('equal')  # 保持圓型
+
+    file_path = f'./static/{user_id}_expense_pie_chart.png'
+    plt.savefig(file_path, bbox_inches='tight') 
+    plt.close()
+    print(f"圓餅圖已儲存到 {file_path}")
+    return file_path
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
