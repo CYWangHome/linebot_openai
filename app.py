@@ -79,7 +79,7 @@ def query_expenses_by_category(user_id, month):
     return result
 
 def plot_expense_pie_chart(user_id, month):
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']
+    plt.rcParams['font.sans-serif'] = ['Arial Unicode Ms']  # 確認字體存在
     data = query_expenses_by_category(user_id, month)
     if not data:
         return None
@@ -91,6 +91,11 @@ def plot_expense_pie_chart(user_id, month):
     plt.savefig(file_path)
     plt.close()
     return file_path
+
+# 新增的靜態檔案路由
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_file(os.path.join('static', path))
 
 def generate_template_message(alt_text, title, text, actions):
     return TemplateSendMessage(
@@ -191,8 +196,8 @@ def handle_message(event):
         month = datetime.now().strftime("%Y-%m")
         chart_path = plot_expense_pie_chart(user_id, month)
         if chart_path:
-            image_message = ImageSendMessage(original_content_url=f"{request.url_root}static/{os.path.basename(chart_path)}",
-                                             preview_image_url=f"{request.url_root}static/{os.path.basename(chart_path)}")
+            image_url = f"{request.url_root}static/{os.path.basename(chart_path)}"
+            image_message = ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
             line_bot_api.reply_message(reply_token, image_message)
         else:
             response_message = TextSendMessage(text="目前並無支出紀錄！")
