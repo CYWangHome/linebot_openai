@@ -179,7 +179,7 @@ def handle_message(event):
         actions = [
             MessageAction(label="查詢本日累積", text="查詢本日累積"),
             MessageAction(label="統計本月結餘", text="統計本月結餘"),
-            MessageAction(label="支出圓形圖", text="支出圓形圖")
+            MessageAction(label="本月支出圓形圖", text="本月支出圓形圖")
         ]
         response_message = generate_template_message("查看帳本", "查看帳本選單", "請選擇查詢方式", actions)
         line_bot_api.reply_message(reply_token, response_message)
@@ -227,7 +227,7 @@ def handle_message(event):
             response_message = TextSendMessage(text=f"本月收入總和為 {total_income} 元，支出總和為 {total_expense} 元，結餘為 {balance} 元")
         print(f"Queried monthly balance: {user_id}, {month}, Income: {total_income}, Expense: {total_expense}, Balance: {balance}")
         line_bot_api.reply_message(reply_token, response_message)
-    elif message == "支出圓形圖":
+    elif message == "本月支出圓形圖":
         month = datetime.now().strftime("%Y-%m")
         print(f"Generating pie chart for user {user_id} for month {month}")
         chart_path = plot_expense_pie_chart(user_id, month)
@@ -241,7 +241,7 @@ def handle_message(event):
             print(f"Failed to generate pie chart for {user_id} for month {month}")
             line_bot_api.reply_message(reply_token, response_message)
     else:
-        response_message = TextSendMessage(text="無效的指令")
+        response_message = TextSendMessage(text="請輸入正確的指令")
         print(f"Invalid command from {user_id}: {message}")
         line_bot_api.reply_message(reply_token, response_message)
 
